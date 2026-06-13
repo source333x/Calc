@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Work Value Planner</title>
+<style>
+:root{
+--ink:#101010;--paper:#f4f4f4;--white:#fff;--graphite:#242424;--slate:#6b7280;--silver:#e5e7eb;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);font-family:Inter,system-ui,sans-serif;color:var(--graphite)}
+.wrap{max-width:1200px;margin:auto;padding:24px}
+h1,h2{margin:0 0 12px}
+h1{font-size:48px}
+.card{background:#fff;padding:24px;border-radius:12px;box-shadow:rgba(36,36,36,.05) 0 4px 8px}
+.grid{display:grid;gap:16px}
+.hero{grid-template-columns:2fr 1fr}
+.settings{grid-template-columns:repeat(auto-fit,minmax(280px,1fr));margin-top:16px}
+input,select{width:100%;padding:10px;border:1px solid var(--silver);border-radius:8px;margin-top:6px}
+label{display:block;margin:10px 0;font-size:14px}
+button{background:var(--ink);color:#fff;border:none;padding:12px 20px;border-radius:999px;cursor:pointer}
+.result{font-size:28px;font-weight:700}
+.small{color:var(--slate)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Work Value Planner</h1>
+
+<div class="grid hero">
+<div class="card">
+<h2>Can I Afford This?</h2>
+<label>Item Cost ($)<input id="cost" type="number"></label>
+<button onclick="calc()">Calculate</button>
+<div id="out" class="result" style="margin-top:16px"></div>
+<div id="details" class="small"></div>
+</div>
+
+<div class="card">
+<h2>Dashboard</h2>
+<div id="dash"></div>
+</div>
+</div>
+
+<div class="grid settings">
+<div class="card">
+<h2>Income</h2>
+<label>Pay Type
+<select id="payType">
+<option value="hourly">Hourly</option>
+<option value="salary">Salary</option>
+</select></label>
+<label>Hourly Rate<input id="hourly" type="number" value="30"></label>
+<label>Yearly Salary<input id="salary" type="number" value="70000"></label>
+<label>Hours/Week<input id="hoursWeek" type="number" value="37.5"></label>
+<label>Paychecks/Year<input id="paychecks" type="number" value="26"></label>
+</div>
+
+<div class="card">
+<h2>Flex Hours</h2>
+<label>Current Flex<input id="flexCurrent" type="number" value="60"></label>
+<label>Max Flex<input id="flexMax" type="number" value="80"></label>
+<label>Earn Per Paycheck<input id="flexEarn" type="number" value="0"></label>
+</div>
+
+<div class="card">
+<h2>Vacation</h2>
+<label>Current Vacation<input id="vacCurrent" type="number" value="0"></label>
+<label>Max Vacation<input id="vacMax" type="number" value="37.5"></label>
+<label>Min Vacation<input id="vacMin" type="number" value="-37.5"></label>
+<label>Earn Per Paycheck<input id="vacEarn" type="number" value="2.89"></label>
+</div>
+
+<div class="card">
+<h2>Planner</h2>
+<label>Vacation Days Wanted<input id="vacDays" type="number" value="5"></label>
+<button onclick="plan()">Plan Usage</button>
+<div id="planOut" class="small" style="margin-top:10px"></div>
+</div>
+</div>
+</div>
+
+<script>
+function hourlyRate(){
+ let type=document.getElementById('payType').value;
+ let hw=+document.getElementById('hoursWeek').value||37.5;
+ if(type==='hourly') return +document.getElementById('hourly').value||0;
+ let sal=+document.getElementById('salary').value||0;
+ return sal/(52*hw);
+}
+
+function calc(){
+ save();
+ let cost=+document.getElementById('cost').value||0;
+ let hr=hourlyRate();
+ let hours=cost/hr;
+ let days=hours/(+document.getElementById('hoursWeek').value/5);
+
+ let flex=+document.getElementById('flexCurrent').value||0;
+ let flexValue=flex*hr;
+
+ document.getElementById('out').innerHTML =
+ hours.toFixed(1)+" work hours";
+
+ document.getElementById('details').innerHTML =
+ "≈ "+days.toFixed(1)+" work days<br>"+
+ "Current flex value: $"+flexValue.toFixed(2)+"<br>"+
+ "Hours remaining after using flex: "+Math.max(0,hours-flex).toFixed(1);
+ updateDash();
+}
+
+function plan(){
+ let vac=+document.getElementById('vacCurrent').value||0;
+ let earn=+document.getElementById('vacEarn').value||0;
+ let need=(+document.getElementById('vacDays').value||0)*7.5;
+
+ let paychecksNeeded=Math.max(0,(need-vac)/Math.max(.01,earn));
+
+ document.getElementById('planOut').innerHTML=
+ "Hours needed: "+need.toFixed(1)+"<br>"+
+ "Current vacation: "+vac.toFixed(1)+"<br>"+
+ "Estimated paychecks until enough vacation: "+paychecksNeeded.toFixed(1)+"<br>"+
+ "Use flex first if vacation is projected to exceed its cap.";
+}
+
+function updateDash(){
+ let hr=hourlyRate();
+ let flex=+document.getElementById('flexCurrent').value||0;
+ let vac=+document.getElementById('vacCurrent').value||0;
+ document.getElementById('dash').innerHTML=
+ "Effective hourly rate: $"+hr.toFixed(2)+"<br><br>"+
+ "Flex: "+flex+" hrs<br>"+
+ "Vacation: "+vac+" hrs";
+}
+
+function save(){
+ document.querySelectorAll('input,select').forEach(e=>localStorage.setItem(e.id,e.value));
+}
+
+function load(){
+ document.querySelectorAll('input,select').forEach(e=>{
+   let v=localStorage.getItem(e.id);
+   if(v!==null)e.value=v;
+   e.oninput=save;
+ });
+ updateDash();
+}
+load();
+</script>
+</body>
+</html>
